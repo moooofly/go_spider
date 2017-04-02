@@ -2,10 +2,10 @@ package main
 
 import (
     "github.com/PuerkitoBio/goquery"
-    "github.com/hu17889/go_spider/core/common/page"
-    "github.com/hu17889/go_spider/core/common/request"
-    "github.com/hu17889/go_spider/core/pipeline"
-    "github.com/hu17889/go_spider/core/spider"
+    "github.com/moooofly/go_spider/core/common/page"
+    "github.com/moooofly/go_spider/core/common/request"
+    "github.com/moooofly/go_spider/core/pipeline"
+    "github.com/moooofly/go_spider/core/spider"
     "net/http"
     "net/url"
     "strings"

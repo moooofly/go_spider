@@ -8,9 +8,9 @@ package downloader_test
 import (
     "fmt"
     "github.com/PuerkitoBio/goquery"
-    "github.com/hu17889/go_spider/core/common/page"
-    "github.com/hu17889/go_spider/core/common/request"
-    "github.com/hu17889/go_spider/core/downloader"
+    "github.com/moooofly/go_spider/core/common/page"
+    "github.com/moooofly/go_spider/core/common/request"
+    "github.com/moooofly/go_spider/core/downloader"
     "testing"
 )
 

@@ -6,9 +6,9 @@
 package main
 
 import (
-    "github.com/hu17889/go_spider/core/common/page"
-    "github.com/hu17889/go_spider/core/pipeline"
-    "github.com/hu17889/go_spider/core/spider"
+    "github.com/moooofly/go_spider/core/common/page"
+    "github.com/moooofly/go_spider/core/pipeline"
+    "github.com/moooofly/go_spider/core/spider"
     "fmt"
     "log"
     "strconv"

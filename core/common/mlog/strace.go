@@ -7,7 +7,7 @@ import (
 
 // Strace represents an active object that strace the processing of spider.
 // The strace info is output to os.Stderr.
-// The loginst is an point of logger in Std-Packages.
+// The loginst is an pointer of logger in Std-Packages.
 // The isopen is a label represents whether open strace or not.
 type strace struct {
     plog
@@ -15,11 +15,12 @@ type strace struct {
     loginst *log.Logger
 }
 
+// 未显式初始化，则初始化为对应类型对零值
 var pstrace *strace
 
-// StraceInst get the singleton strace object.
+// 获取 strace 对象（单例模式）
 func StraceInst() *strace {
-    if pstrace == nil {
+    if pstrace == nil { // NOTE: nil comparison right?
         pstrace = newStrace()
     }
     return pstrace

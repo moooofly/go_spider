@@ -21,7 +21,7 @@ type filelog struct {
 
 var flog *filelog
 
-// LogInst get the singleton filelog object.
+// 获取 filelog 对象（单例模式）
 func LogInst() *filelog {
     if flog == nil {
         InitFilelog(false, "")
@@ -41,6 +41,7 @@ func InitFilelog(isopen bool, fp string) {
         wd := os.Getenv("GOPATH")
         if wd == "" {
             //panic("GOPATH is not setted in env.")
+            // 从可执行命令上获取路径信息
             file, _ := exec.LookPath(os.Args[0])
             path := filepath.Dir(file)
             wd = path
@@ -58,6 +59,7 @@ func InitFilelog(isopen bool, fp string) {
 func newFilelog(isopen bool, logpath string) *filelog {
     year, month, day := time.Now().Date()
     filename := "log." + strconv.Itoa(year) + "-" + strconv.Itoa(int(month)) + "-" + strconv.Itoa(day)
+    // NOTE: 创建目录，权限 755
     err := os.MkdirAll(logpath, 0755)
     if err != nil {
         panic("logpath error : " + logpath + "\n")

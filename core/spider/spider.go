@@ -19,51 +19,47 @@ import (
 
 type Spider struct {
     taskname string
-
     pPageProcesser page_processer.PageProcesser
-
     pDownloader downloader.Downloader
-
-    pScheduler scheduler.Scheduler
-
-    pPiplelines []pipeline.Pipeline
-
-    mc  resource_manage.ResourceManage
-
+    pScheduler scheduler.Scheduler  // 为当前 spider 指定的 scheduler
+    pPipelines []pipeline.Pipeline  // 每个 pipeline 对应一种输出形式
+    rcManager resource_manage.ResourceManager  // 资源管理
     threadnum uint
-
     exitWhenComplete bool
-
-    // Sleeptype can be fixed or rand.
+    // If sleeptype is "fixed", the s is the sleep time and e is useless.
+    // If sleeptype is "rand", the sleep time is rand between s and e.
     startSleeptime uint
     endSleeptime   uint
-    sleeptype      string
+    sleeptype      string  // 用于控制失败重试时休眠时间的选择方式："fixed" or "rand"
 }
 
-// Spider is scheduler module for all the other modules, like downloader, pipeline, scheduler and etc.
-// The taskname could be empty string too, or it can be used in Pipeline for record the result crawled by which task;
+// Spider is the scheduler module for all the other modules, like downloader, pipeline, scheduler and etc.
+// taskname => could be empty string, or it can be used in Pipeline for record the result crawled by which task
 func NewSpider(pageinst page_processer.PageProcesser, taskname string) *Spider {
+    // 初始化日志输出功能（输出到 os.Stderr 上）
     mlog.StraceInst().Open()
 
     ap := &Spider{taskname: taskname, pPageProcesser: pageinst}
 
-    // init filelog.
+    // 关闭 filelog 日志输出功能
     ap.CloseFileLog()
     ap.exitWhenComplete = true
     ap.sleeptype = "fixed"
     ap.startSleeptime = 0
 
-    // init spider
+    // 指定 queue scheduler 给当前 spider
+    // false 表明当前 queue 不去重
     if ap.pScheduler == nil {
         ap.SetScheduler(scheduler.NewQueueScheduler(false))
     }
 
+    // 新建 HTTP 下载器
     if ap.pDownloader == nil {
         ap.SetDownloader(downloader.NewHttpDownloader())
     }
 
     mlog.StraceInst().Println("** start spider **")
-    ap.pPiplelines = make([]pipeline.Pipeline, 0)
+    ap.pPipelines = make([]pipeline.Pipeline, 0)
 
     return ap
 }
@@ -124,46 +120,53 @@ func (this *Spider) Run() {
     if this.threadnum == 0 {
         this.threadnum = 1
     }
-    this.mc = resource_manage.NewResourceManageChan(this.threadnum)
+    this.rcManager = resource_manage.NewResourceManageChan(this.threadnum)
 
     //init db  by sorawa
 
     for {
         req := this.pScheduler.Poll()
 
-        // mc is not atomic
-        if this.mc.Has() == 0 && req == nil && this.exitWhenComplete {
-	    mlog.StraceInst().Println("** executed callback **")
-	    this.pPageProcesser.Finish()
+        // NOTE: rcManager is not atomic
+        // 当满足：
+        // 1. 尚有资源被占用（存在未处理完的东东）
+        // 2. scheduler 中没有更多的 request 待处理
+        // 3. 所有 request 处理结束后退出当前程序
+        if this.rcManager.Used() == 0 && req == nil && this.exitWhenComplete {
+	        mlog.StraceInst().Println("** executed callback **")
+            // 清理工作
+	        this.pPageProcesser.Finish()
             mlog.StraceInst().Println("** end spider **")
             break
-        } else if req == nil {
+        } else if req == nil {  // 或者存在资源尚被占用情况，或者设置了完成后不退出
             time.Sleep(500 * time.Millisecond)
             //mlog.StraceInst().Println("scheduler is empty")
             continue
         }
-        this.mc.GetOne()
+        this.rcManager.GetOne()
 
         // Asynchronous fetching
         go func(req *request.Request) {
-            defer this.mc.FreeOne()
+            defer this.rcManager.FreeOne()
             //time.Sleep( time.Duration(rand.Intn(5)) * time.Second)
             mlog.StraceInst().Println("start crawl : " + req.GetUrl())
+            // 开始爬网页
             this.pageProcess(req)
         }(req)
     }
     this.close()
 }
 
+// spider 状态重置
 func (this *Spider) close() {
     this.SetScheduler(scheduler.NewQueueScheduler(false))
     this.SetDownloader(downloader.NewHttpDownloader())
-    this.pPiplelines = make([]pipeline.Pipeline, 0)
+    this.pPipelines = make([]pipeline.Pipeline, 0)
     this.exitWhenComplete = true
 }
 
 func (this *Spider) AddPipeline(p pipeline.Pipeline) *Spider {
-    this.pPiplelines = append(this.pPiplelines, p)
+    this.pPipelines = append(this.pPipelines, p)
     return this
 }
 
@@ -256,15 +259,21 @@ func (this *Spider) SetSleepTime(sleeptype string, s uint, e uint) *Spider {
 
 func (this *Spider) sleep() {
     if this.sleeptype == "fixed" {
+        // s is the sleep time and e is useless
         time.Sleep(time.Duration(this.startSleeptime) * time.Millisecond)
     } else if this.sleeptype == "rand" {
+        // sleep time is rand between s and e
         sleeptime := rand.Intn(int(this.endSleeptime-this.startSleeptime)) + int(this.startSleeptime)
         time.Sleep(time.Duration(sleeptime) * time.Millisecond)
     }
 }
 
+// url => 目标 URL
+// respType => 预期应答类型
 func (this *Spider) AddUrl(url string, respType string) *Spider {
+    // 构建一个 GET request 结构
     req := request.NewRequest(url, respType, "", "GET", "", nil, nil, nil, nil)
+    // 将 req 放入 scheduler
     this.AddRequest(req)
     return this
 }
@@ -305,7 +314,7 @@ func (this *Spider) AddUrlsEx(urls []string, respType string, headerFile string,
     return this
 }
 
-// add Request to Schedule
+// add Request to Scheduler
 func (this *Spider) AddRequest(req *request.Request) *Spider {
     if req == nil {
         mlog.LogInst().LogError("request is nil")
@@ -341,13 +350,13 @@ func (this *Spider) pageProcess(req *request.Request) {
     }()
 
     // download page
+    // 默认重复 3 次
     for i := 0; i < 3; i++ {
         this.sleep()
         p = this.pDownloader.Download(req)
         if p.IsSucc() { // if fail retry 3 times
             break
         }
-
     }
 
     if !p.IsSucc() { // if fail do not need process
@@ -361,7 +370,7 @@ func (this *Spider) pageProcess(req *request.Request) {
 
     // output
     if !p.GetSkip() {
-        for _, pip := range this.pPiplelines {
+        for _, pip := range this.pPipelines {
             //fmt.Println("%v",p.GetPageItems().GetAll())
             pip.Process(p.GetPageItems(), this)
         }

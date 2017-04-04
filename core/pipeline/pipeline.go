@@ -10,7 +10,7 @@ import (
 type Pipeline interface {
     // The Process implements result persistent.
     // The items has the result be crawled.
-    // The t has informations of this crawl task.
+    // The t has information of this crawl task.
     Process(items *page_items.PageItems, t com_interfaces.Task)
 }
 

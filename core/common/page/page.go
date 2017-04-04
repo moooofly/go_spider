@@ -15,11 +15,11 @@ import (
 
 // Page represents an entity be crawled.
 type Page struct {
-    // The isfail is true when crawl process is failed and errormsg is the fail resean.
+    // The isfail is true when crawl process is failed and errormsg is the fail reason.
     isfail   bool
     errormsg string
 
-    // The request is crawled by spider that contains url and relevent information.
+    // The request is crawled by spider that contains url and relevant information.
     req *request.Request
 
     // The body is plain text of crawl result.
@@ -28,14 +28,14 @@ type Page struct {
     header  http.Header
     cookies []*http.Cookie
 
-    // The docParser is a pointer of goquery boject that contains html result.
+    // The docParser is a pointer of goquery object that contains html result.
     docParser *goquery.Document
 
     // The jsonMap is the json result.
     jsonMap *simplejson.Json
 
     // The pItems is object for save Key-Values in PageProcesser.
-    // And pItems is output in Pipline.
+    // And pItems is output in Pipeline.
     pItems *page_items.PageItems
 
     // The targetRequests is requests to put into Scheduler.
@@ -47,22 +47,22 @@ func NewPage(req *request.Request) *Page {
     return &Page{pItems: page_items.NewPageItems(req), req: req}
 }
 
-// SetHeader save the header of http responce
+// SetHeader save the header of http response
 func (this *Page) SetHeader(header http.Header) {
     this.header = header
 }
 
-// GetHeader returns the header of http responce
+// GetHeader returns the header of http response
 func (this *Page) GetHeader() http.Header {
     return this.header
 }
 
-// SetHeader save the cookies of http responce
+// SetHeader save the cookies of http response
 func (this *Page) SetCookies(cookies []*http.Cookie) {
     this.cookies = cookies
 }
 
-// GetHeader returns the cookies of http responce
+// GetHeader returns the cookies of http response
 func (this *Page) GetCookies() []*http.Cookie {
     return this.cookies
 }
@@ -120,13 +120,13 @@ func (this *Page) GetUrlTag() string {
     return this.req.GetUrlTag()
 }
 
-// AddTargetRequest adds one new Request waitting for crawl.
+// AddTargetRequest adds one new Request waiting for crawl.
 func (this *Page) AddTargetRequest(url string, respType string) *Page {
     this.targetRequests = append(this.targetRequests, request.NewRequest(url, respType, "", "GET", "", nil, nil, nil, nil))
     return this
 }
 
-// AddTargetRequests adds new Requests waitting for crawl.
+// AddTargetRequests adds new Requests waiting for crawl.
 func (this *Page) AddTargetRequests(urls []string, respType string) *Page {
     for _, url := range urls {
         this.AddTargetRequest(url, respType)
@@ -134,14 +134,14 @@ func (this *Page) AddTargetRequests(urls []string, respType string) *Page {
     return this
 }
 
-// AddTargetRequestWithProxy adds one new Request waitting for crawl.
+// AddTargetRequestWithProxy adds one new Request waiting for crawl.
 func (this *Page) AddTargetRequestWithProxy(url string, respType string, proxyHost string) *Page {
 
     this.targetRequests = append(this.targetRequests, request.NewRequestWithProxy(url, respType, "", "GET", "", nil, nil, proxyHost, nil, nil))
     return this
 }
 
-// AddTargetRequestsWithProxy adds new Requests waitting for crawl.
+// AddTargetRequestsWithProxy adds new Requests waiting for crawl.
 func (this *Page) AddTargetRequestsWithProxy(urls []string, respType string, proxyHost string) *Page {
     for _, url := range urls {
         this.AddTargetRequestWithProxy(url, respType, proxyHost)
@@ -149,13 +149,13 @@ func (this *Page) AddTargetRequestsWithProxy(urls []string, respType string, pro
     return this
 }
 
-// AddTargetRequest adds one new Request with header file for waitting for crawl.
+// AddTargetRequest adds one new Request with header file for waiting for crawl.
 func (this *Page) AddTargetRequestWithHeaderFile(url string, respType string, headerFile string) *Page {
     this.targetRequests = append(this.targetRequests, request.NewRequestWithHeaderFile(url, respType, headerFile))
     return this
 }
 
-// AddTargetRequest adds one new Request waitting for crawl.
+// AddTargetRequest adds one new Request waiting for crawl.
 // The respType is "html" or "json" or "jsonp" or "text".
 // The urltag is name for marking url and distinguish different urls in PageProcesser and Pipeline.
 // The method is POST or GET.
@@ -167,7 +167,7 @@ func (this *Page) AddTargetRequestWithParams(req *request.Request) *Page {
     return this
 }
 
-// AddTargetRequests adds new Requests waitting for crawl.
+// AddTargetRequests adds new Requests waiting for crawl.
 func (this *Page) AddTargetRequestsWithParams(reqs []*request.Request) *Page {
     for _, req := range reqs {
         this.AddTargetRequestWithParams(req)
@@ -191,18 +191,18 @@ func (this *Page) GetBodyStr() string {
     return this.body
 }
 
-// SetHtmlParser saves goquery object binded to target crawl result.
+// SetHtmlParser saves goquery object bound to target crawl result.
 func (this *Page) SetHtmlParser(doc *goquery.Document) *Page {
     this.docParser = doc
     return this
 }
 
-// GetHtmlParser returns goquery object binded to target crawl result.
+// GetHtmlParser returns goquery object bound to target crawl result.
 func (this *Page) GetHtmlParser() *goquery.Document {
     return this.docParser
 }
 
-// GetHtmlParser returns goquery object binded to target crawl result.
+// GetHtmlParser returns goquery object bound to target crawl result.
 func (this *Page) ResetHtmlParser() *goquery.Document {
     r := strings.NewReader(this.body)
     var err error

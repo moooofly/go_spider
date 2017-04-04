@@ -40,7 +40,7 @@ func NewHttpDownloader() *HttpDownloader {
 func (this *HttpDownloader) Download(req *request.Request) *page.Page {
     var mtype string
     var p = page.NewPage(req)
-    mtype = req.GetResponceType()
+    mtype = req.GetResponseType()
     switch mtype {
     case "html":
         return this.downloadHtml(p, req)
@@ -245,7 +245,7 @@ func connectByHttp(p *page.Page, req *request.Request) (*http.Response, error) {
     return resp, nil
 }
 
-// choose a proxy server to excute http GET/method to download
+// choose a proxy server to execute http GET/method to download
 func connectByHttpProxy(p *page.Page, in_req *request.Request) (*http.Response, error) {
     request, _ := http.NewRequest("GET", in_req.GetUrl(), nil)
     proxy, err := url.Parse(in_req.GetProxyHost())
@@ -262,7 +262,6 @@ func connectByHttpProxy(p *page.Page, in_req *request.Request) (*http.Response, 
         return nil, err
     }
     return resp, nil
-
 }
 
 // Download file and change the charset of page charset.
@@ -278,10 +277,12 @@ func (this *HttpDownloader) downloadFile(p *page.Page, req *request.Request) (*p
     var resp *http.Response
 
     if proxystr := req.GetProxyHost(); len(proxystr) != 0 {
+        // 配置了 HTTP Proxy 的情况
         //using http proxy
         //fmt.Print("HttpProxy Enter ",proxystr,"\n")
         resp, err = connectByHttpProxy(p, req)
     } else {
+        // 未配置 HTTP Proxy 的情况
         //normal http download
         //fmt.Print("Http Normal Enter \n",proxystr,"\n")
         resp, err = connectByHttp(p, req)
@@ -347,7 +348,7 @@ func (this *HttpDownloader) downloadJson(p *page.Page, req *request.Request) *pa
 
     var body []byte
     body = []byte(destbody)
-    mtype := req.GetResponceType()
+    mtype := req.GetResponseType()
     if mtype == "jsonp" {
         tmpstr := util.JsonpToJson(destbody)
         body = []byte(tmpstr)

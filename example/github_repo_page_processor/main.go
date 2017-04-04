@@ -61,12 +61,9 @@ func (this *MyPageProcesser) Finish() {
 }
 
 func main() {
-    // Spider input:
-    //  PageProcesser ;
-    //  Task name used in Pipeline for record;
-    spider.NewSpider(NewMyPageProcesser(), "TaskName").
-        AddUrl("https://github.com/moooofly?tab=repositories", "html"). // Start url, html is the responce type ("html" or "json" or "jsonp" or "text")
-        AddPipeline(pipeline.NewPipelineConsole()).                    // Print result on screen
-        SetThreadnum(3).                                               // Crawl request by three Coroutines
-        Run()
+    // Taskname 用于在 Pipeline 中识别爬取到的内容属于哪个 task
+    // 针对指定 URL 进行爬取，并指定 response type 为 "html" ，当前支持 "html", "json", "jsonp", "text" 四种
+    // NOTE: 如何事先知道 response type 是什么的呢？
+    spider.NewSpider(NewMyPageProcesser(), "TaskName").AddUrl("https://github.com/moooofly?tab=repositories", "html").
+        AddPipeline(pipeline.NewPipelineConsole()).SetThreadnum(3).Run()
 }

@@ -1,4 +1,4 @@
-// Package request implements request entity contains url and other relevant informaion.
+// Package request implements request entity contains url and other relevant information.
 package request
 
 import (
@@ -14,7 +14,7 @@ import (
 type Request struct {
     Url string
 
-    // Responce type: html json jsonp text
+    // Response type: html json jsonp text
     RespType string
 
     // GET POST
@@ -150,7 +150,7 @@ func (this *Request) GetProxyHost() string {
     return this.ProxyHost
 }
 
-func (this *Request) GetResponceType() string {
+func (this *Request) GetResponseType() string {
     return this.RespType
 }
 

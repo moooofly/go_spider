@@ -26,7 +26,7 @@ func (this *ResourceManageChan) FreeOne() {
 }
 
 // The Has query for how many resource has been used.
-func (this *ResourceManageChan) Has() uint {
+func (this *ResourceManageChan) Used() uint {
     return uint(len(this.mc))
 }
 

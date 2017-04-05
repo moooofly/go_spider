@@ -21,10 +21,10 @@ type Spider struct {
     taskname string
     pPageProcesser page_processer.PageProcesser
     pDownloader downloader.Downloader
-    pScheduler scheduler.Scheduler  // 为当前 spider 指定的 scheduler
+    pScheduler scheduler.Scheduler  // 为当前 spider 指定的 scheduler ，其中存放所有 request
     pPipelines []pipeline.Pipeline  // 每个 pipeline 对应一种输出形式
     rcManager resource_manage.ResourceManager  // 资源管理
-    threadnum uint
+    rcNum uint  // 控制可用资源数量（用于限制并发 goroutine 数目）
     exitWhenComplete bool
     // If sleeptype is "fixed", the s is the sleep time and e is useless.
     // If sleeptype is "rand", the sleep time is rand between s and e.
@@ -117,14 +117,13 @@ func (this *Spider) GetAllByRequest(reqs []*request.Request) []*page_items.PageI
 }
 
 func (this *Spider) Run() {
-    if this.threadnum == 0 {
-        this.threadnum = 1
+    if this.rcNum == 0 {
+        this.rcNum = 1
     }
-    this.rcManager = resource_manage.NewResourceManageChan(this.threadnum)
-
-    //init db  by sorawa
+    this.rcManager = resource_manage.NewResourceManageChan(this.rcNum)
 
     for {
+        // 取出一个待处理 request
         req := this.pScheduler.Poll()
 
         // NOTE: rcManager is not atomic
@@ -143,14 +142,16 @@ func (this *Spider) Run() {
             //mlog.StraceInst().Println("scheduler is empty")
             continue
         }
+        // 获取一个可用资源（无资源可用会阻塞）
         this.rcManager.GetOne()
 
+        // 通过上述资源管理控制并发 goroutine 数量
         // Asynchronous fetching
         go func(req *request.Request) {
             defer this.rcManager.FreeOne()
             //time.Sleep( time.Duration(rand.Intn(5)) * time.Second)
             mlog.StraceInst().Println("start crawl : " + req.GetUrl())
-            // 开始爬网页
+            // 开始页面处理（爬网页）
             this.pageProcess(req)
         }(req)
     }
@@ -188,13 +189,13 @@ func (this *Spider) GetDownloader() downloader.Downloader {
     return this.pDownloader
 }
 
-func (this *Spider) SetThreadnum(i uint) *Spider {
-    this.threadnum = i
+func (this *Spider) SetRCNum(i uint) *Spider {
+    this.rcNum = i
     return this
 }
 
-func (this *Spider) GetThreadnum() uint {
-    return this.threadnum
+func (this *Spider) GetRCNum() uint {
+    return this.rcNum
 }
 
 // If exit when each crawl task is done.
@@ -314,7 +315,7 @@ func (this *Spider) AddUrlsEx(urls []string, respType string, headerFile string,
     return this
 }
 
-// add Request to Scheduler
+// 将 request 添加到 scheduler 中
 func (this *Spider) AddRequest(req *request.Request) *Spider {
     if req == nil {
         mlog.LogInst().LogError("request is nil")
@@ -335,7 +336,7 @@ func (this *Spider) AddRequests(reqs []*request.Request) *Spider {
     return this
 }
 
-// core processer
+// 开始页面处理
 func (this *Spider) pageProcess(req *request.Request) {
     var p *page.Page
 
@@ -349,10 +350,10 @@ func (this *Spider) pageProcess(req *request.Request) {
         }
     }()
 
-    // download page
-    // 默认重复 3 次
+    // 默认重试 3 次
     for i := 0; i < 3; i++ {
         this.sleep()
+        // 针对初始 URL 进行爬取
         p = this.pDownloader.Download(req)
         if p.IsSucc() { // if fail retry 3 times
             break
@@ -363,16 +364,18 @@ func (this *Spider) pageProcess(req *request.Request) {
         return
     }
 
+    // 调用自定义页面处理代码（从初始页面上获取并构建其它链接）
     this.pPageProcesser.Process(p)
+    // 将等待放入 sheduler 的其他 request 加到其中
     for _, req := range p.GetTargetRequests() {
         this.AddRequest(req)
     }
 
-    // output
     if !p.GetSkip() {
-        for _, pip := range this.pPipelines {
+        for _, pipe := range this.pPipelines {
             //fmt.Println("%v",p.GetPageItems().GetAll())
-            pip.Process(p.GetPageItems(), this)
+            // 处理爬取到所有内容（例如输出到 console）
+            pipe.Process(p.GetPageItems(), this)
         }
     }
 }

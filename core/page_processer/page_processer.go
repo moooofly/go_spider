@@ -10,6 +10,6 @@ import (
 
 // 页面处理器
 type PageProcesser interface {
-    Process(p *page.Page)
-    Finish()
+    Process(p *page.Page)  // 页面处理
+    Finish()               // 页面处理后清理工作
 }

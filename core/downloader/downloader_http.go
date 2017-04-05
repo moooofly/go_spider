@@ -39,7 +39,9 @@ func NewHttpDownloader() *HttpDownloader {
 
 func (this *HttpDownloader) Download(req *request.Request) *page.Page {
     var mtype string
+    // 将 request 关联到 Page 和 PageItems 中
     var p = page.NewPage(req)
+    // 获取指定的 response type
     mtype = req.GetResponseType()
     switch mtype {
     case "html":
@@ -165,8 +167,8 @@ func (this *HttpDownloader) changeCharsetGoIconv(charset string, sor io.ReadClos
 // Charset auto determine. Use golang.org/x/net/html/charset. Get page body and change it to utf-8
 func (this *HttpDownloader) changeCharsetEncodingAuto(contentTypeStr string, sor io.ReadCloser) string {
     var err error
+    // 获取能够将 sor 中的内容转换成 UTF-8 的 io.Reader
     destReader, err := charset.NewReader(sor, contentTypeStr)
-
     if err != nil {
         mlog.LogInst().LogError(err.Error())
         destReader = sor
@@ -187,20 +189,24 @@ func (this *HttpDownloader) changeCharsetEncodingAuto(contentTypeStr string, sor
 
 func (this *HttpDownloader) changeCharsetEncodingAutoGzipSupport(contentTypeStr string, sor io.ReadCloser) string {
 	var err error
+    // gzipReader is an io.Reader that can be read to retrieve
+    // uncompressed data from a gzip-format compressed file.
 	gzipReader, err := gzip.NewReader(sor)
 	if err != nil {
 		mlog.LogInst().LogError(err.Error())
 		return ""
 	}
 	defer gzipReader.Close()
-	destReader, err := charset.NewReader(gzipReader, contentTypeStr)
 
+    // 获取能够将 gzipReader 中的内容转换成 UTF-8 的 io.Reader
+	destReader, err := charset.NewReader(gzipReader, contentTypeStr)
 	if err != nil {
 		mlog.LogInst().LogError(err.Error())
 		destReader = sor
 	}
 
 	var sorbody []byte
+    // NOTE: 上面的 UTF-8 转换的原因在于 ioutil.ReadAll 的接口需要？
 	if sorbody, err = ioutil.ReadAll(destReader); err != nil {
 		mlog.LogInst().LogError(err.Error())
 		// For gb2312, an error will be returned.
@@ -215,23 +221,27 @@ func (this *HttpDownloader) changeCharsetEncodingAutoGzipSupport(contentTypeStr 
 
 // choose http GET/method to download
 func connectByHttp(p *page.Page, req *request.Request) (*http.Response, error) {
+    // NOTE: 这里有点意思，为何只关注 redirect 功能
     client := &http.Client{
         CheckRedirect: req.GetRedirectFunc(),
     }
 
-    httpreq, err := http.NewRequest(req.GetMethod(), req.GetUrl(), strings.NewReader(req.GetPostdata()))
+    // 构建 HTTP request
+    httpReq, err := http.NewRequest(req.GetMethod(), req.GetUrl(), strings.NewReader(req.GetPostdata()))
     if header := req.GetHeader(); header != nil {
-        httpreq.Header = req.GetHeader()
+        // NOTE: 这里不是应该直接使用 header 进行赋值么？
+        httpReq.Header = req.GetHeader()
     }
 
     if cookies := req.GetCookies(); cookies != nil {
         for i := range cookies {
-            httpreq.AddCookie(cookies[i])
+            httpReq.AddCookie(cookies[i])
         }
     }
 
+    // 发起 HTTP request 获取 HTTP response
     var resp *http.Response
-    if resp, err = client.Do(httpreq); err != nil {
+    if resp, err = client.Do(httpReq); err != nil {
         if e, ok := err.(*url.Error); ok && e.Err != nil && e.Err.Error() == "normal" {
             //  normal
         } else {
@@ -264,7 +274,12 @@ func connectByHttpProxy(p *page.Page, in_req *request.Request) (*http.Response, 
     return resp, nil
 }
 
-// Download file and change the charset of page charset.
+// 该函数作为其它 downloadXXX 函数的基础
+//
+// 1. 发送 HTTP request 获取 HTTP response
+// 2. 支持 HTTP Proxy
+// 3. 支持 gzip 处理（自动）
+// 4. 支持 page 字符集自动识别和转换（转 UTF-8）
 func (this *HttpDownloader) downloadFile(p *page.Page, req *request.Request) (*page.Page, string) {
     var err error
     var urlstr string
@@ -276,14 +291,14 @@ func (this *HttpDownloader) downloadFile(p *page.Page, req *request.Request) (*p
 
     var resp *http.Response
 
+    // 发送 HTTP request 获取 HTTP response
+    // 考虑是否存在 HTTP 代理的情况
     if proxystr := req.GetProxyHost(); len(proxystr) != 0 {
-        // 配置了 HTTP Proxy 的情况
-        //using http proxy
+        // 基于 HTTP Proxy 进行下载
         //fmt.Print("HttpProxy Enter ",proxystr,"\n")
         resp, err = connectByHttpProxy(p, req)
     } else {
-        // 未配置 HTTP Proxy 的情况
-        //normal http download
+        // 直接 HTTP 下载
         //fmt.Print("Http Normal Enter \n",proxystr,"\n")
         resp, err = connectByHttp(p, req)
     }
@@ -295,10 +310,10 @@ func (this *HttpDownloader) downloadFile(p *page.Page, req *request.Request) (*p
     //b, _ := ioutil.ReadAll(resp.Body)
     //fmt.Printf("Resp body %v \r\n", string(b))
 
-    p.SetHeader(resp.Header)
+    p.SetRspHeader(resp.Header)
     p.SetCookies(resp.Cookies())
 
-    // get converter to utf-8
+    // 进行 UTF-8 编码转换（考虑是否使用 gzip 的情况）
 	var bodyStr string
 	if resp.Header.Get("Content-Encoding") == "gzip" {
 		bodyStr = this.changeCharsetEncodingAutoGzipSupport(resp.Header.Get("Content-Type"), resp.Body)
@@ -312,12 +327,15 @@ func (this *HttpDownloader) downloadFile(p *page.Page, req *request.Request) (*p
 
 func (this *HttpDownloader) downloadHtml(p *page.Page, req *request.Request) *page.Page {
     var err error
+    // destbody 已经是 resp.Body 经过 UTF-8 编码转换后的 string 了
     p, destbody := this.downloadFile(p, req)
     //fmt.Printf("Destbody %v \r\n", destbody)
     if !p.IsSucc() {
         //fmt.Print("Page error \r\n")
         return p
     }
+
+    // 解析获取到的 response body 内容
     bodyReader := bytes.NewReader([]byte(destbody))
 
     var doc *goquery.Document
@@ -349,6 +367,7 @@ func (this *HttpDownloader) downloadJson(p *page.Page, req *request.Request) *pa
     var body []byte
     body = []byte(destbody)
     mtype := req.GetResponseType()
+    // 关于 jsonp 详见这里：http://www.cnblogs.com/dowinning/archive/2012/04/19/json-jsonp-jquery.html
     if mtype == "jsonp" {
         tmpstr := util.JsonpToJson(destbody)
         body = []byte(tmpstr)

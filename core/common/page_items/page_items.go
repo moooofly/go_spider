@@ -6,14 +6,12 @@ import (
     "github.com/moooofly/go_spider/core/common/request"
 )
 
-// PageItems represents an entity save result parsed by PageProcesser and will be output at last.
+// PageItems 用于保存 PageProcesser 解析得到的结果
 type PageItems struct {
 
     // The req is Request object that contains the parsed result, which saved in PageItems.
     req *request.Request
-
-    // The items is the container of parsed result.
-    items map[string]string
+    items map[string]string  // 解析结果保存成 k/v 形式
 
     // The skip represents whether send ResultItems to scheduler or not.
     skip bool

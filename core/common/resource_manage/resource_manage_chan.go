@@ -2,6 +2,7 @@ package resource_manage
 
 // ResourceManageChan inherits the ResourceManage interface.
 // In spider, ResourceManageChan manage resource of Coroutine to crawl page.
+// 基于 channel 的资源管理（利用 channel 的容量实现阻塞功能）
 type ResourceManageChan struct {
     capnum uint
     mc     chan uint

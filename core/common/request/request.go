@@ -12,28 +12,14 @@ import (
 
 // Request represents object waiting for being crawled.
 type Request struct {
-    Url string
-
-    // Response type: html json jsonp text
-    RespType string
-
-    // GET POST
-    Method string
-
-    // POST data
-    Postdata string
-
-    // name for marking url and distinguish different urls in PageProcesser and Pipeline
-    Urltag string
-
-    // http header
-    Header http.Header
-
-    // http cookies
-    Cookies []*http.Cookie
-
-    //proxy host   example='localhost:80'
-    ProxyHost string
+    Url string       // 当前 HTTP request 的目标 URL
+    RespType string  // 指定的 response type (html/json/jsonp/text)
+    Method string    // 当前 HTTP request 使用的 method (GET or POST)
+    Postdata string  // 当发起 POST request 时使用
+    Urltag string    // 用于在 PageProcesser 和 Pipeline 中区分不同 URL 的 tag
+    Header http.Header      // 设置到 HTTP request 中的 header
+    Cookies []*http.Cookie  // 设置到 HTTP request 中的 cookie(s)
+    ProxyHost string        // 用于指定 Proxy 地址，例如 'localhost:80'
 
     // Redirect function for downloader used in http.Client
     // If CheckRedirect returns an error, the Client's Get

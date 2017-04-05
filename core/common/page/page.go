@@ -13,48 +13,46 @@ import (
     //"fmt"
 )
 
-// Page represents an entity be crawled.
+// Page 对应被爬取的实体对象
 type Page struct {
     // The isfail is true when crawl process is failed and errormsg is the fail reason.
     isfail   bool
     errormsg string
 
     // The request is crawled by spider that contains url and relevant information.
-    req *request.Request
+    req *request.Request    // 封装 HTTP request 相关内容
+    body string             // 保存爬取到的明文结果，处理过程 resp.Body =>(UTF-8)=> destbody =>(doc.Html())=> body
 
-    // The body is plain text of crawl result.
-    body string
+    rspHeader  http.Header  // 保存 response 中的 header
+    cookies []*http.Cookie  // 保存 response 中的 cookie
 
-    header  http.Header
-    cookies []*http.Cookie
-
-    // The docParser is a pointer of goquery object that contains html result.
-    docParser *goquery.Document
+    // a pointer of goquery object that contains html result.
+    docParser *goquery.Document // Document represents an HTML document to be manipulated
 
     // The jsonMap is the json result.
     jsonMap *simplejson.Json
 
-    // The pItems is object for save Key-Values in PageProcesser.
-    // And pItems is output in Pipeline.
+    // 记录所有在 PageProcesser 中解析得到的 k/v 内容
     pItems *page_items.PageItems
 
-    // The targetRequests is requests to put into Scheduler.
+    // 缓存等待添加到 scheduler 中的所有 request
     targetRequests []*request.Request
 }
 
 // NewPage returns initialized Page object.
+// NOTE: 初始化 Page 对象；可以看出 request 被同时保存到 Page 和 PageItems 中
 func NewPage(req *request.Request) *Page {
     return &Page{pItems: page_items.NewPageItems(req), req: req}
 }
 
 // SetHeader save the header of http response
-func (this *Page) SetHeader(header http.Header) {
-    this.header = header
+func (this *Page) SetRspHeader(header http.Header) {
+    this.rspHeader = header
 }
 
 // GetHeader returns the header of http response
-func (this *Page) GetHeader() http.Header {
-    return this.header
+func (this *Page) GetRspHeader() http.Header {
+    return this.rspHeader
 }
 
 // SetHeader save the cookies of http response
@@ -94,7 +92,7 @@ func (this *Page) GetPageItems() *page_items.PageItems {
 }
 
 // SetSkip set label "skip" of PageItems.
-// PageItems will not be saved in Pipeline wher skip is set true
+// PageItems will not be saved in Pipeline when skip is set true
 func (this *Page) SetSkip(skip bool) {
     this.pItems.SetSkip(skip)
 }
@@ -104,13 +102,13 @@ func (this *Page) GetSkip() bool {
     return this.pItems.GetSkip()
 }
 
-// SetRequest saves request oject of this page.
+// SetRequest saves request object of this page.
 func (this *Page) SetRequest(r *request.Request) *Page {
     this.req = r
     return this
 }
 
-// GetRequest returns request oject of this page.
+// GetRequest returns request object of this page.
 func (this *Page) GetRequest() *request.Request {
     return this.req
 }
@@ -121,6 +119,7 @@ func (this *Page) GetUrlTag() string {
 }
 
 // AddTargetRequest adds one new Request waiting for crawl.
+// 将 request 保存到 targetRequest 中等待爬取
 func (this *Page) AddTargetRequest(url string, respType string) *Page {
     this.targetRequests = append(this.targetRequests, request.NewRequest(url, respType, "", "GET", "", nil, nil, nil, nil))
     return this

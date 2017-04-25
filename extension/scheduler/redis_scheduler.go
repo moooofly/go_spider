@@ -6,6 +6,7 @@ import (
     "github.com/moooofly/go_spider/core/common/mlog"
     "github.com/moooofly/go_spider/core/common/request"
     "sync"
+    "fmt"
 )
 
 type RedisScheduler struct {
@@ -41,7 +42,14 @@ func (this *RedisScheduler) Init() *RedisScheduler {
 }
 
 func (this *RedisScheduler) newConn() (redis.Conn, error) {
-    return redis.Dial("tcp", this.redisAddr)
+    c, err := redis.Dial("tcp", this.redisAddr)
+    if err != nil {
+        fmt.Println("newConn ==> err: %v", err)
+    } else {
+        fmt.Println("newConn ==> Success!")
+    }
+    return c, err
+    //return redis.Dial("tcp", this.redisAddr)
 }
 func (this *RedisScheduler) Push(requ *request.Request) {
     this.locker.Lock()

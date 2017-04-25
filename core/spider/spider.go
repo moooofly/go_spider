@@ -90,6 +90,7 @@ func (this *Spider) GetAll(urls []string, respType string) []*page_items.PageIte
 }
 
 // Deal with one url and return the PageItems with other setting.
+// 针对一个 request URL 进行爬取
 func (this *Spider) GetByRequest(req *request.Request) *page_items.PageItems {
     var reqs []*request.Request
     reqs = append(reqs, req)
@@ -101,21 +102,25 @@ func (this *Spider) GetByRequest(req *request.Request) *page_items.PageItems {
 }
 
 // Deal with several urls and return the PageItems slice
+// 针对一组 request URLs 进行爬取
 func (this *Spider) GetAllByRequest(reqs []*request.Request) []*page_items.PageItems {
-    // push url
     for _, req := range reqs {
-        //req := request.NewRequest(u, respType, urltag, method, postdata, header, cookies)
+        // 将 request 添加到 scheduler 中
         this.AddRequest(req)
     }
 
+    // 创建专门用于收集 PageItems 的 pipeline
     pip := pipeline.NewCollectPipelinePageItems()
     this.AddPipeline(pip)
 
+    // 运行 spider
     this.Run()
 
+    // 获取收集到的 PageItems
     return pip.GetCollected()
 }
 
+// 执行爬取动作
 func (this *Spider) Run() {
     if this.rcNum == 0 {
         this.rcNum = 1

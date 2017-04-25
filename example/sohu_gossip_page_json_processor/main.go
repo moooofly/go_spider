@@ -28,8 +28,8 @@ type MyPageProcesser struct {
 }
 
 type ChangyanListDataJson struct {
-    OuterCmtSum      int `json:"outer_cmt_sum"`
-    ParticipationSum int `json:"participation_sum"`
+    OuterCmtSum      int `json:"outer_cmt_sum"`      // 评论数
+    ParticipationSum int `json:"participation_sum"`  // 参与数
 }
 
 type ChangyanJson struct {
@@ -40,8 +40,9 @@ func NewMyPageProcesser() *MyPageProcesser {
     return &MyPageProcesser{}
 }
 
+// NOTE: 这里 cookie 没有得到正确处理
 func addRequest(p *page.Page, tag, url, cookie, content string) {
-    req := request.NewRequest(url, "json", tag, "GET", "", nil, nil, nil, content)
+    req := request.NewRequest(url, "json", tag, "GET", "", nil, /* cookie */nil, nil, content)
     p.AddTargetRequestWithParams(req)
 }
 
@@ -85,7 +86,7 @@ func (this MyPageProcesser) Process(p *page.Page) {
 }
 
 func (this *MyPageProcesser) Finish() {
-    fmt.Printf("TODO:before end spider \r\n")
+    fmt.Printf("TODO: before end spider \r\n")
 }
 
 func main() {
@@ -93,7 +94,7 @@ func main() {
     sohuSpider := spider.NewSpider(NewMyPageProcesser(), "Sohu").
         AddRequest(req).
         SetSleepTime("rand", 500, 1000).
-        SetThreadnum(2)
+        SetRCNum(2)
 
     for i := 1; i < maxWKSouhuLayer; i++ {
         url := fmt.Sprintf("http://yule.sohu.com/gossip/index_%d.shtml", 5301-i) // magic num

@@ -25,8 +25,6 @@ func NewMyPageProcesser() *MyPageProcesser {
     return &MyPageProcesser{}
 }
 
-// Parse html dom here and record the parse result that we want to Page.
-// Package goquery (http://godoc.org/github.com/PuerkitoBio/goquery) is used to parse html.
 func (this *MyPageProcesser) Process(p *page.Page) {
     if !p.IsSucc() {
         println(p.Errormsg())
@@ -49,23 +47,17 @@ func (this *MyPageProcesser) Process(p *page.Page) {
     if next_page_href == "" {
         p.SetSkip(true)
     } else {
+        //fmt.Printf("====> next_page_href: %s\n", next_page_href)
         p.AddTargetRequestWithHeaderFile("http://weixin.sogou.com/weixin"+next_page_href, "html", "weixin.sogou.com.json")
     }
-
 }
 
 func (this *MyPageProcesser) Finish() {
-    fmt.Printf("TODO:before end spider \r\n")
+    fmt.Printf("TODO: before end spider \r\n")
 }
 
 func main() {
-    // Spider input:
-    //  PageProcesser ;
-    //  Task name used in Pipeline for record;
     req_url := "http://weixin.sogou.com/weixin?query=%E4%BA%91%E6%B5%AE&type=1&page=1&ie=utf8"
-    spider.NewSpider(NewMyPageProcesser(), "TaskName").
-        AddUrlWithHeaderFile(req_url, "html", "weixin.sogou.com.json"). // Start url, html is the responce type ("html" or "json" or "jsonp" or "text")
-        AddPipeline(pipeline.NewPipelineConsole()).                     // Print result on screen
-        SetThreadnum(3).                                                // Crawl request by three Coroutines
-        Run()
+    spider.NewSpider(NewMyPageProcesser(), "TaskName").AddUrlWithHeaderFile(req_url, "html", "weixin.sogou.com.json").
+        AddPipeline(pipeline.NewPipelineConsole()).SetRCNum(3).Run()
 }

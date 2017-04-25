@@ -55,7 +55,7 @@ func NewRequestWithProxy(url string, respType string, urltag string, method stri
 func NewRequestWithHeaderFile(url string, respType string, headerFile string) *Request {
     _, err := os.Stat(headerFile)
     if err != nil {
-        //file is not exist , using default mode
+        // If file is not exist , using default mode
         return NewRequest(url, respType, "", "GET", "", nil, nil, nil, nil)
     }
 
@@ -65,15 +65,14 @@ func NewRequestWithHeaderFile(url string, respType string, headerFile string) *R
 }
 
 func readHeaderFromFile(headerFile string) http.Header {
-    //read file , parse the header and cookies
+    // read file, and parse headers and cookies
     b, err := ioutil.ReadFile(headerFile)
     if err != nil {
-        //make be:  share access error
+        // make be: share access error
         mlog.LogInst().LogError(err.Error())
         return nil
     }
     js, _ := simplejson.NewJson(b)
-    //constructed to header
 
     h := make(http.Header)
     h.Add("User-Agent", js.Get("User-Agent").MustString())

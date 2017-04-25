@@ -21,25 +21,18 @@ func NewMyPageProcesser() *MyPageProcesser {
     return &MyPageProcesser{}
 }
 
-// Parse html dom here and record the parse result that we want to Page.
-// Package goquery (http://godoc.org/github.com/PuerkitoBio/goquery) is used to parse html.
+// 页面处理
+// 1. 解析 HTML DOM 并记录解析结果
+// 2. 基于 goquery (http://godoc.org/github.com/PuerkitoBio/goquery) 完成 HTML 解析
 func (this *MyPageProcesser) Process(p *page.Page) {
 
     if p.GetUrlTag() == "site_login" {
         //fmt.Printf("%v\n", p.GetCookies())
         this.cookies = p.GetCookies()
-        // AddTargetRequestWithParams Params:
-        //  1. Url.
-        //  2. Responce type is "html" or "json" or "jsonp" or "text".
-        //  3. The urltag is name for marking url and distinguish different urls in PageProcesser and Pipeline.
-        //  4. The method is POST or GET.
-        //  5. The postdata is body string sent to sever.
-        //  6. The header is header for http request.
-        //  7. Cookies
-        //  8. Http redirect function
         if len(this.cookies) != 0 {
             p.AddField("info", "get cookies success")
-            req := request.NewRequest("http://backadmin.hucong.net/site/index", "html", "site_index", "GET", "", nil, this.cookies, nil, nil)
+            req := request.NewRequest("http://backadmin.hucong.net/site/index", "html", "site_index", "GET",
+                "", nil, this.cookies, nil, nil)
             p.AddTargetRequestWithParams(req)
         } else {
             p.AddField("info", "get cookies failed")
@@ -55,10 +48,11 @@ func (this *MyPageProcesser) Process(p *page.Page) {
         } else {
             p.AddField("info", "login failed")
         }
-
     }
 
-    return
+    // NOTE: typo?
+    //return
+
     if !p.IsSucc() {
         println(p.Errormsg())
         return
@@ -88,7 +82,7 @@ func (this *MyPageProcesser) Process(p *page.Page) {
 }
 
 func (this *MyPageProcesser) Finish() {
-    fmt.Printf("TODO:before end spider \r\n")
+    fmt.Printf("TODO: before end spider \r\n")
 }
 
 // function that prevent redirect for getting cookies
@@ -100,7 +94,7 @@ func myRedirect(req *http.Request, via []*http.Request) error {
 func main() {
 
     // POST data
-    post_arg := url.Values{
+    postArgs:= url.Values {
         "name": {"admin"},
         "pwd":  {"admin"},
     }
@@ -109,23 +103,21 @@ func main() {
     header := make(http.Header)
     header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-    // Spider input:
-    //  PageProcesser ;
-    //  Task name used in Pipeline for record;
     // AddRequest Params:
-    //  1. Url.
-    //  2. Responce type is "html" or "json" or "jsonp" or "text".
-    //  3. The urltag is name for marking url and distinguish different urls in PageProcesser and Pipeline.
-    //  4. The method is POST or GET.
-    //  5. The postdata is body string sent to sever.
-    //  6. The header is header for http request.
-    //  7. Cookies
-    //  8. Http redirect function
-    req := request.NewRequest("http://backadmin.hucong.net/main/user/login", "html", "site_login", "POST", post_arg.Encode(), header, nil, myRedirect, nil)
+    //  1. url ==> custom Url.
+    //  2. respType ==> "html" or "json" or "jsonp" or "text".
+    //  3. urltag ==> name for marking url and distinguish different urls in PageProcesser and Pipeline.
+    //  4. method ==> POST or GET.
+    //  5. postdata ==> body string sent to server.
+    //  6. header ==> header for http request.
+    //  7. cookies ==> Cookies
+    //  8. checkRedirect ==> Http redirect function
+    //  9. meta ==> custom data
+    req := request.NewRequest("http://backadmin.hucong.net/main/user/login", "html", "site_login", "POST",
+        postArgs.Encode(), header, nil, myRedirect, nil)
 
-    spider.NewSpider(NewMyPageProcesser(), "TaskName").
-        AddRequest(req).
-        AddPipeline(pipeline.NewPipelineConsole()). // Print result on screen
-        SetThreadnum(3).                            // Crawl request by three Coroutines
-        Run()
+    //  pageinst ==> PageProcesser;
+    //  taskname ==> used in Pipeline for record;
+    spider.NewSpider(NewMyPageProcesser(), "TaskName").AddRequest(req).
+        AddPipeline(pipeline.NewPipelineConsole()).SetRCNum(3).Run()
 }

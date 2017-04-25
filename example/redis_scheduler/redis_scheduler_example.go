@@ -44,7 +44,7 @@ func (this *MyProcessor) Process(p *page.Page) {
             return
         }
 
-        //处理相对路径
+        // 处理相对路径
         var absHref string
         urlHref, err := url.Parse(href)
         if err != nil {
@@ -66,7 +66,6 @@ func (this *MyProcessor) Process(p *page.Page) {
 }
 
 func (this *MyProcessor) Finish() {
-
 }
 
 func main() {
@@ -84,7 +83,7 @@ func main() {
         //SetScheduler(scheduler.NewQueueScheduler(true)).
         SetScheduler(scheduler.NewRedisScheduler(redisAddr, redisMaxConn, redisMaxIdle, true)).
         AddPipeline(pipeline.NewPipelineConsole()).
-        SetThreadnum(thread_num)
+        SetRCNum(thread_num)
 
     init := false
     for _, arg := range os.Args {

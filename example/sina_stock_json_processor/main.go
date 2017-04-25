@@ -22,8 +22,6 @@ func NewMyPageProcesser() *MyPageProcesser {
     return &MyPageProcesser{}
 }
 
-// Parse html dom here and record the parse result that we want to crawl.
-// Package simplejson (https://github.com/bitly/go-simplejson) is used to parse data of json.
 func (this *MyPageProcesser) Process(p *page.Page) {
     if !p.IsSucc() {
         println(p.Errormsg())
@@ -83,19 +81,16 @@ func (this *MyPageProcesser) Process(p *page.Page) {
 }
 
 func (this *MyPageProcesser) Finish() {
-    fmt.Printf("TODO:before end spider \r\n")
+    fmt.Printf("TODO: before end spider \r\n")
 }
 
 func main() {
-    // spider input:
-    //  PageProcesser ;
-    //  task name used in Pipeline for record;
     spider.NewSpider(NewMyPageProcesser(), "sina_stock_news").
-        AddUrl("http://live.sina.com.cn/zt/api/l/get/finance/globalnews1/index.htm?format=json&id=63621&pagesize=10&dire=f", "json"). // start url, html is the responce type ("html" or "json" or "jsonp" or "text")
-        AddPipeline(pipeline.NewPipelineConsole()).                                                                                   // Print result to std output
-        AddPipeline(pipeline.NewPipelineFile("/tmp/sinafile")).                                                                       // Print result in file
-        OpenFileLog("/tmp").                                                                                                          // Error info or other useful info in spider will be logged in file of defalt path like "WD/log/log.2014-9-1".
-        SetSleepTime("rand", 1000, 3000).                                                                                             // Sleep time between 1s and 3s.
+        AddUrl("http://live.sina.com.cn/zt/api/l/get/finance/globalnews1/index.htm?format=json&id=63621&pagesize=10&dire=f", "json").
+        AddPipeline(pipeline.NewPipelineConsole()).
+        AddPipeline(pipeline.NewPipelineFile("/tmp/sinafile")).
+        OpenFileLog("/tmp").
+        SetSleepTime("rand", 1000, 3000).
         Run()
     //AddPipeline(pipeline.NewPipelineFile("/tmp/tmpfile")). // print result in file
 }

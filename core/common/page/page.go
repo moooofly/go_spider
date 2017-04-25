@@ -161,6 +161,7 @@ func (this *Page) AddTargetRequestWithHeaderFile(url string, respType string, he
 // The postdata is http body string.
 // The header is http header.
 // The cookies is http cookies.
+// 只用于添加外部构建好的、具有 param 的 request
 func (this *Page) AddTargetRequestWithParams(req *request.Request) *Page {
     this.targetRequests = append(this.targetRequests, req)
     return this

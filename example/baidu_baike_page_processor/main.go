@@ -16,8 +16,6 @@ func NewMyPageProcesser() *MyPageProcesser {
     return &MyPageProcesser{}
 }
 
-// Parse html dom here and record the parse result that we want to crawl.
-// Package goquery (http://godoc.org/github.com/PuerkitoBio/goquery) is used to parse html.
 func (this *MyPageProcesser) Process(p *page.Page) {
     if !p.IsSucc() {
         println(p.Errormsg())
@@ -38,23 +36,24 @@ func (this *MyPageProcesser) Process(p *page.Page) {
 }
 
 func (this *MyPageProcesser) Finish() {
-    fmt.Printf("TODO:before end spider \r\n")
+    fmt.Printf("TODO: before end spider \r\n")
 }
 
 func main() {
-    // spider input:
-    //  PageProcesser ;
-    //  task name used in Pipeline for record;
     sp := spider.NewSpider(NewMyPageProcesser(), "TaskName")
-    // GetWithParams Params:
-    //  1. Url.
-    //  2. Responce type is "html" or "json" or "jsonp" or "text".
-    //  3. The urltag is name for marking url and distinguish different urls in PageProcesser and Pipeline.
-    //  4. The method is POST or GET.
-    //  5. The postdata is body string sent to sever.
-    //  6. The header is header for http request.
-    //  7. Cookies
+
+    //  Params:
+    //  1. url ==> custom Url.
+    //  2. respType ==> "html" or "json" or "jsonp" or "text".
+    //  3. urltag ==> name for marking url and distinguish different urls in PageProcesser and Pipeline.
+    //  4. method ==> POST or GET.
+    //  5. postdata ==> body string sent to server.
+    //  6. header ==> header for http request.
+    //  7. cookies ==> Cookies
+    //  8. checkRedirect ==> Http redirect function
+    //  9. meta ==> custom data
     req := request.NewRequest("http://baike.baidu.com/view/1628025.htm?fromtitle=http&fromid=243074&type=syn", "html", "", "GET", "", nil, nil, nil, nil)
+    // 内部会针对当前 URL 运行一次 spider
     pageItems := sp.GetByRequest(req)
     //pageItems := sp.Get("http://baike.baidu.com/view/1628025.htm?fromtitle=http&fromid=243074&type=syn", "html")
 
@@ -75,8 +74,10 @@ func main() {
         req := request.NewRequest(url, "html", "", "GET", "", nil, nil, nil, nil)
         reqs = append(reqs, req)
     }
-    pageItemsArr := sp.SetThreadnum(2).GetAllByRequest(reqs)
-    //pageItemsArr := sp.SetThreadnum(2).GetAll(urls, "html")
+
+    // 内部会针对当前 URLs 运行一次 spider
+    pageItemsArr := sp.SetRCNum(2).GetAllByRequest(reqs)
+    //pageItemsArr := sp.SetRCNum(2).GetAll(urls, "html")
     for _, item := range pageItemsArr {
         url = item.GetRequest().GetUrl()
         println("url\t:\t" + url)
